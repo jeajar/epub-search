@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+    <title>eBook - AI Documentation Search</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .search-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px 20px;
+            font-size: 1.1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-input:focus {
+            border-color: #667eea;
+        }
+
+        .search-button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .search-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .search-button:active {
+            transform: translateY(0);
+        }
+
+        .search-options {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.95rem;
+            color: #666;
+        }
+
+        .results-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            min-height: 400px;
+        }
+
+        .results-header {
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.3rem;
+        }
+
+        .result-item {
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .result-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .result-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .result-snippet {
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .result-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #888;
+        }
+
+        .result-score {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .no-results h3 {
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .toc-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            margin-bottom: 30px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .toc-header {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .toc-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .toc-item:hover {
+            background: #f8f9fa;
+        }
+
+        .toc-item-title {
+            font-weight: 500;
+            color: #667eea;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .back-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: #f8f9fa;
+            color: #667eea;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .back-button:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .back-button svg {
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 eBook Search</h1>
+            <p>AI-Powered Documentation Search</p>
+        </div>
+
+        <div class="search-container">
+            <div class="search-box">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="search-input" 
+                    placeholder="Search for concepts, principles, patterns..."
+                    autocomplete="off"
+                >
+                <button class="search-button" onclick="performSearch()">Search</button>
+            </div>
+            <div class="search-options">
+                <label class="checkbox-label">
+                    <input type="checkbox" id="vectorSearch" checked>
+                    <span>Use AI Semantic Search</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="toc-container hidden" id="tocContainer">
+            <div class="toc-header">Table of Contents</div>
+            <div id="tocContent"></div>
+        </div>
+
+        <div class="results-container">
+            <div id="resultsContent">
+                <div class="no-results">
+                    <h3>Welcome to eBook Search</h3>
+                    <p>Enter a search query above to find relevant content from the book.</p>
+                    <p style="margin-top: 20px;">
+                        <button class="search-button" onclick="toggleTOC()" style="background: #28a745;">Browse Table of Contents</button>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let tocData = [];
+
+        // Load TOC on page load
+        async function loadTOC() {
+            try {
+                const response = await fetch('/api/toc');
+                const data = await response.json();
+                tocData = data.toc || [];
+            } catch (error) {
+                console.error('Error loading TOC:', error);
+            }
+        }
+
+        function showTOC() {
+            const container = document.getElementById('tocContainer');
+            const content = document.getElementById('tocContent');
+            
+            if (container.classList.contains('hidden')) {
+                container.classList.remove('hidden');
+                content.innerHTML = tocData.map(item => `
+                    <div class="toc-item" onclick="loadContent('${item.file}')">
+                        <div class="toc-item-title">${item.title}</div>
+                    </div>
+                `).join('');
+            } else {
+                container.classList.add('hidden');
+            }
+        }
+
+        function toggleTOC() {
+            const container = document.getElementById('tocContainer');
+            const content = document.getElementById('tocContent');
+            const isHidden = container.classList.contains('hidden');
+            
+            if (isHidden) {
+                container.classList.remove('hidden');
+                content.innerHTML = tocData.map(item => `
+                    <div class="toc-item" onclick="loadContent('${item.file}')">
+                        <div class="toc-item-title">${item.title}</div>
+                    </div>
+                `).join('');
+            } else {
+                container.classList.add('hidden');
+            }
+            
+            // Update all TOC toggle button texts
+            updateTocButtonText();
+        }
+
+        function updateTocButtonText() {
+            const container = document.getElementById('tocContainer');
+            const isHidden = container.classList.contains('hidden');
+            const btnTexts = document.querySelectorAll('.toc-btn-text');
+            btnTexts.forEach(btn => {
+                btn.textContent = isHidden ? 'Table of Contents' : 'Hide Table of Contents';
+            });
+        }
+
+        async function loadContent(filename) {
+            try {
+                const response = await fetch(`/api/content/${filename}`);
+                const doc = await response.json();
+                
+                // Display content with back button
+                const resultsContent = document.getElementById('resultsContent');
+                resultsContent.innerHTML = `
+                    <div class="nav-buttons">
+                        <button class="back-button" onclick="goBack()">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M19 12H5M12 19l-7-7 7-7"/>
+                            </svg>
+                            Back
+                        </button>
+                        <button class="back-button" id="tocToggleBtn" onclick="toggleTOC()">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="3" y1="6" x2="21" y2="6"></line>
+                                <line x1="3" y1="12" x2="21" y2="12"></line>
+                                <line x1="3" y1="18" x2="21" y2="18"></line>
+                            </svg>
+                            <span class="toc-btn-text">Table of Contents</span>
+                        </button>
+                    </div>
+                    <div class="result-item" style="border-left: none; background: white;">
+                        <div class="result-title" style="font-size: 1.5rem; margin-bottom: 20px;">${doc.title}</div>
+                        ${doc.headings.map(h => `<h3 style="margin: 15px 0 10px 0; color: #333;">${h.text}</h3>`).join('')}
+                        ${doc.paragraphs.map(p => `<p class="result-snippet" style="margin-bottom: 15px;">${p.text}</p>`).join('')}
+                    </div>
+                `;
+                
+                // Hide TOC
+                document.getElementById('tocContainer').classList.add('hidden');
+                
+                // Scroll to top
+                window.scrollTo(0, 0);
+            } catch (error) {
+                console.error('Error loading content:', error);
+                alert('Error loading content');
+            }
+        }
+
+        function goBack() {
+            // Reset to welcome screen
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="no-results">
+                    <h3>Welcome to eBook Search</h3>
+                    <p>Enter a search query above to find relevant content from the book.</p>
+                    <p style="margin-top: 20px;">
+                        <button class="search-button" onclick="toggleTOC()" style="background: #28a745;">Browse Table of Contents</button>
+                    </p>
+                </div>
+            `;
+            window.scrollTo(0, 0);
+        }
+
+        async function performSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            const useVector = document.getElementById('vectorSearch').checked;
+            
+            if (!query) {
+                return;
+            }
+
+            const resultsContent = document.getElementById('resultsContent');
+            resultsContent.innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Searching...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        limit: 10,
+                        use_vector_search: useVector
+                    })
+                });
+
+                const data = await response.json();
+                const results = data.results || [];
+
+                if (results.length === 0) {
+                    resultsContent.innerHTML = `
+                        <div class="no-results">
+                            <h3>No results found</h3>
+                            <p>Try different keywords or browse the table of contents.</p>
+                        </div>
+                    `;
+                } else {
+                    resultsContent.innerHTML = results.map(result => `
+                        <div class="result-item" onclick="loadContent('${result.file}')">
+                            <div class="result-title">${result.title}</div>
+                            <div class="result-snippet">${result.snippet}...</div>
+                            <div class="result-meta">
+                                <span>${result.file}</span>
+                                <span class="result-score">Score: ${result.score.toFixed(3)}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                resultsContent.innerHTML = `
+                    <div class="no-results">
+                        <h3>Error performing search</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Allow Enter key to trigger search
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                performSearch();
+            }
+        });
+
+        // Load TOC on page load
+        loadTOC();
+    </script>
+</body>
+</html>
